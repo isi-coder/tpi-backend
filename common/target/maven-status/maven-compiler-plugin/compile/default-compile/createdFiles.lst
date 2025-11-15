@@ -1,0 +1,6 @@
+ar\edu\utnfrc\tpi\common\dto\GeoPointDTO$GeoPointDTOBuilder.class
+ar\edu\utnfrc\tpi\common\dto\CapacidadDTO$CapacidadDTOBuilder.class
+ar\edu\utnfrc\tpi\common\api\ErrorResponse.class
+ar\edu\utnfrc\tpi\common\api\ErrorResponse$ErrorResponseBuilder.class
+ar\edu\utnfrc\tpi\common\dto\CapacidadDTO.class
+ar\edu\utnfrc\tpi\common\dto\GeoPointDTO.class

@@ -1,0 +1,38 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: ms-operaciones
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/tpi?options=-c%20TimeZone=America/Argentina/Buenos_Aires
+    username: tpi
+    password: tpi
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate.default_schema: operaciones
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+
+#  jackson:
+#    time-zone: America/Argentina/Buenos_Aires
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/tpi-backend
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized   # o 'always' si querés ver detalles sin token
+      probes:
+        enabled: true

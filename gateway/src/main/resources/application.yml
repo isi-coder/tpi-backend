@@ -1,0 +1,40 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: api-gateway
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/tpi-backend
+
+  cloud:
+    gateway:
+      default-filters:
+        - RemoveRequestHeader=Cookie
+
+      routes:
+        # ------------ Operaciones ------------
+        - id: ms-operaciones
+          uri: http://localhost:8091
+          predicates:
+            - Path=/ops/**   # TODO: todo lo de operaciones cuelga de /ops
+          filters:
+            - StripPrefix=1
+
+        # ------------ Maestros ------------
+        - id: ms-maestros
+          uri: http://localhost:8092
+          predicates:
+            - Path=/mstr/**  # TODO: todo lo de maestros cuelga de /mstr
+          filters:
+            - StripPrefix=1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

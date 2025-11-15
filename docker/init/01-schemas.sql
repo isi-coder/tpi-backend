@@ -1,0 +1,3 @@
+CREATE SCHEMA IF NOT EXISTS maestros;
+CREATE SCHEMA IF NOT EXISTS operaciones;
+ALTER DATABASE tpi SET TIMEZONE TO 'America/Argentina/Buenos_Aires';

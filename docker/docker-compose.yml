@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: tpi
+      POSTGRES_PASSWORD: tpi
+      POSTGRES_DB: tpi
+    ports: ["5433:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.3
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+    ports: ["8081:8080"]
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    command: osrm-routed /data/argentina-latest.osrm
+    volumes: ["../osrm-data:/data"]
+    ports: ["5000:5000"]
+
+volumes:
+  pgdata:
