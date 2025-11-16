@@ -70,6 +70,15 @@ public class SolicitudController {
 
         return service.calcularRutaTentativaConDeposito(body);
     }
+    // ==== Asignar ruta REAL con depósito (OPERADOR / ADMIN) ====
+    @PostMapping("/{id}/ruta-con-deposito")
+    @PreAuthorize("hasAnyRole('operador','admin')")
+    public Solicitud asignarRutaConDeposito(
+            @PathVariable("id") Long solicitudId,
+            @RequestBody RutaTentativaDepositoRequest body) {
+
+        return service.asignarRutaConDeposito(solicitudId, body);
+    }
 
 
     // ==== Solicitudes pendientes de entrega (OPERADOR / ADMIN) ====

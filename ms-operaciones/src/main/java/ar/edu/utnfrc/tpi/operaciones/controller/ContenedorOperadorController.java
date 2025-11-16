@@ -21,4 +21,11 @@ public class ContenedorOperadorController {
     public List<ContenedorPendienteDTO> listarPendientes() {
         return solicitudService.listarContenedoresPendientes();
     }
+    // ==== Contenedores EN depósito (OPERADOR / ADMIN) ====
+    @GetMapping("/en-deposito")
+    @PreAuthorize("hasAnyRole('operador','admin')")
+    public List<ContenedorPendienteDTO> listarEnDeposito() {
+        return solicitudService.listarContenedoresEnDeposito();
+    }
+
 }

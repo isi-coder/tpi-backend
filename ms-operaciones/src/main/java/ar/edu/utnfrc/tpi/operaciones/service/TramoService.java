@@ -16,10 +16,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ar.edu.utnfrc.tpi.operaciones.client.DepositoClient;
+import ar.edu.utnfrc.tpi.operaciones.dtos.DepositoDTO;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +36,8 @@ public class TramoService {
     private final CamionClient camionClient;
     private final ContenedorClient contenedorClient;
     private final TarifaClient tarifaClient;
+    private final DepositoClient depositoClient;
+    private final SolicitudService solicitudService;
 
     // ======= CONSULTAS BÁSICAS =======
 
@@ -227,11 +235,12 @@ public class TramoService {
         boolean quedanActivos = tramosSoloSolicitud.stream()
                 .anyMatch(t -> !"FINALIZADO".equalsIgnoreCase(t.getEstado()));
 
+        // Si no queda ningún tramo activo, calculamos costo real y tiempo real total
         if (!quedanActivos) {
             Solicitud sol = tramo.getRuta().getSolicitud();
             sol.setEstado("COMPLETADA");
 
-            // === Cálculo de tarifa REAL ===
+            // === 1) Cálculo de tarifa REAL base (transporte) ===
             TarifaDTO tarifa = tarifaClient.getTarifaActual();
 
             double kmTotales = tramosSoloSolicitud.stream()
@@ -240,6 +249,7 @@ public class TramoService {
 
             double costoReal = 0d;
 
+            // Tomamos un camión (asumimos mismo tipo para todos los tramos de la solicitud)
             Long camionId = tramosSoloSolicitud.stream()
                     .map(Tramo::getCamionId)
                     .filter(Objects::nonNull)
@@ -262,10 +272,47 @@ public class TramoService {
                 costoReal += costoKmCamion + costoCombustible;
             }
 
-            // estadía en depósitos: por ahora 0 (lo completamos cuando metamos depósitos)
+            // === 2) Costo de estadía en depósitos ===
             double costoEstadia = 0d;
+
+            // Agrupo tramos por depósito (depositoId != null)
+            Map<Long, List<Tramo>> tramosPorDeposito = tramosSoloSolicitud.stream()
+                    .filter(t -> t.getDepositoId() != null)
+                    .collect(Collectors.groupingBy(Tramo::getDepositoId));
+
+            for (Map.Entry<Long, List<Tramo>> entry : tramosPorDeposito.entrySet()) {
+                Long depositoId = entry.getKey();
+                List<Tramo> tramosDep = entry.getValue().stream()
+                        .sorted(Comparator.comparing(Tramo::getId))
+                        .toList();
+
+                // Necesitamos al menos un tramo de llegada y uno de salida
+                if (tramosDep.size() < 2) continue;
+
+                Tramo llegada = tramosDep.get(0);
+                Tramo salida  = tramosDep.get(1);
+
+                if (llegada.getFinReal() == null || salida.getInicioReal() == null) continue;
+
+                long dias = ChronoUnit.DAYS.between(
+                        llegada.getFinReal().toLocalDate(),
+                        salida.getInicioReal().toLocalDate()
+                );
+
+                // Mínimo 1 día de estadía si hay diferencia
+                if (dias < 1) dias = 1;
+
+                DepositoDTO deposito = depositoClient.getById(depositoId);
+                Double costoDia = deposito.getCostoDiarioEstadia() != null
+                        ? deposito.getCostoDiarioEstadia()
+                        : 0d;
+
+                costoEstadia += dias * costoDia;
+            }
+
             costoReal += costoEstadia;
 
+            // === 3) Cargo de gestión por tramo ===
             long cantidadTramos = tramosSoloSolicitud.size();
             double cargoGestion = tarifa.getCargoGestionPorTramo() != null
                     ? tarifa.getCargoGestionPorTramo()
@@ -275,7 +322,7 @@ public class TramoService {
 
             sol.setCostoReal(costoReal);
 
-            // === Tiempo real total de la solicitud ===
+            // === 4) Tiempo real total de la solicitud ===
             var inicioOpt = tramosSoloSolicitud.stream()
                     .map(Tramo::getInicioReal)
                     .filter(Objects::nonNull)
@@ -296,5 +343,6 @@ public class TramoService {
 
         return tramo;
     }
+
 
 }

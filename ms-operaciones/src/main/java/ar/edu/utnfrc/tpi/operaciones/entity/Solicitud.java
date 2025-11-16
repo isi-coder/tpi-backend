@@ -3,6 +3,7 @@ package ar.edu.utnfrc.tpi.operaciones.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;
 
@@ -29,5 +30,6 @@ public class Solicitud {
     private Double duracionRealMin;
 
     @OneToMany(mappedBy = "solicitud")
+    @JsonIgnore //cortamos la recursión de JPA usando @JsonIgnore porque no necesitamos devolver la colección de rutas dentro de cada solicitud en las respuestas de API
     private List<Ruta> rutas;
 }

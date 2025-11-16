@@ -14,14 +14,33 @@ import java.util.List;
 @RequestMapping("/depositos")
 @RequiredArgsConstructor
 public class DepositoController {
+
     private final DepositoRepository repo;
 
+    // ==== Crear depósito ====
     @PreAuthorize("hasAnyRole('operador','administrador')")
-    @PostMapping public Deposito create(@RequestBody Deposito d){ return repo.save(d); }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Deposito create(@RequestBody Deposito d) {
+        return repo.save(d);
+    }
 
+    // ==== Listar todos los depósitos ====
     @PreAuthorize("hasAnyRole('cliente','operador','administrador')")
-    @GetMapping public List<Deposito> list(){ return repo.findAll(); }
+    @GetMapping
+    public List<Deposito> list() {
+        return repo.findAll();
+    }
 
+    // ==== Obtener depósito por id (lo usa ms-operaciones) ====
+    @PreAuthorize("hasAnyRole('cliente','operador','administrador')")
+    @GetMapping("/{id}")
+    public Deposito getById(@PathVariable("id") Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    // ==== Actualizar depósito ====
     @PreAuthorize("hasAnyRole('operador','administrador')")
     @PutMapping("/{id}")
     public Deposito update(@PathVariable("id") Long id, @RequestBody Deposito dto) {
@@ -31,9 +50,7 @@ public class DepositoController {
         d.setDireccion(dto.getDireccion());
         d.setLat(dto.getLat());
         d.setLon(dto.getLon());
+        d.setCostoDiarioEstadia(dto.getCostoDiarioEstadia()); // importante para la estadía
         return repo.save(d);
     }
-
 }
-
-
